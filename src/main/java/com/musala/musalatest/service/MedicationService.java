@@ -1,15 +1,21 @@
 package com.musala.musalatest.service;
 
+import com.musala.musalatest.Exceptions.FileStorageException;
+import com.musala.musalatest.Exceptions.MedicationAlreadyExistsException;
 import com.musala.musalatest.Exceptions.MedicationUnavailableException;
 import com.musala.musalatest.business.dao.MedicationRepository;
 import com.musala.musalatest.business.dto.MedicationRequest;
 import com.musala.musalatest.business.dto.MedicationResponse;
+import com.musala.musalatest.business.model.FileStorage;
 import com.musala.musalatest.business.model.Medication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,7 +24,7 @@ public class MedicationService {
 
     private final MedicationRepository medicationRepository;
 
-    private final FileStorageService fileStorageService;
+//    private final FileStorageService fileStorageService;
 
     public MedicationResponse addMedication(MedicationRequest medicationRequest){
 
@@ -26,25 +32,14 @@ public class MedicationService {
                 .name(medicationRequest.name())
                 .weight(medicationRequest.weight())
                 .code(medicationRequest.code())
-//                .image(medicationRequest.image().getName())
                 .build();
 
         medicationRepository.save(medication);
 
+
         return new MedicationResponse(medicationRequest.name(), medicationRequest.weight(), medicationRequest.code());
     }
 
-    public void uploadImage(String medicationCode,MultipartFile file){
-
-        var medication = findMedicationByCode(medicationCode);
-
-        var storedFile = fileStorageService.storeFile(file);
-
-        medication.setImage(storedFile.getData());
-
-        medicationRepository.save(medication);
-
-    }
 
     public MedicationResponse findMedicationByName(String name){
         var medication = medicationRepository.findMedicationByName(name);

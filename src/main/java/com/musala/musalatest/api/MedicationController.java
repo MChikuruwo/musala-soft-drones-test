@@ -1,6 +1,9 @@
 package com.musala.musalatest.api;
 
 import com.musala.musalatest.business.dto.MedicationRequest;
+import com.musala.musalatest.business.dto.UploadFileResponse;
+import com.musala.musalatest.business.model.FileStorage;
+import com.musala.musalatest.service.FileStorageService;
 import com.musala.musalatest.service.MedicationService;
 import com.musala.musalatest.util.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1/medication")
@@ -15,18 +19,24 @@ import org.springframework.web.multipart.MultipartFile;
 public class MedicationController {
 
     private final MedicationService medicationService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping(value = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse addMedication(@RequestBody MedicationRequest medicationRequest) {
         return new ApiResponse(HttpStatus.CREATED.value(), HttpStatus.CREATED.name(), medicationService.addMedication(medicationRequest));
     }
 
-    @PutMapping(value = "/upload", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
-    public ApiResponse uploadImage(@RequestParam("code") String code, @RequestParam("image") MultipartFile file) {
+    @PutMapping(value = "/image-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UploadFileResponse uploadImage(@RequestParam("medication-code") String code, @RequestParam("image") MultipartFile file) {
 
-        medicationService.uploadImage(code, file);
+        FileStorage dbFile = fileStorageService.storeFile(code, file);
 
-        return new ApiResponse(HttpStatus.OK.value(), HttpStatus.OK.name());
+        String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/downloadFile/")
+                .path(dbFile.getId())
+                .toUriString();
+
+        return new UploadFileResponse(dbFile.getFileName(), fileDownloadUri, file.getContentType(), file.getSize());
     }
 
     @GetMapping("/by-name")

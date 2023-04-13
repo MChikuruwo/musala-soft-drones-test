@@ -15,7 +15,7 @@ public interface DroneRepository extends JpaRepository<Drone,Long> {
 
     Optional<Drone> findDroneBySerialNumber(@Param("serialNumber") String serialNumber);
 
-    Optional<Drone> findDroneByModel(@Param("model") DroneModel model);
+    List<Drone> findDronesByModel(@Param("model") DroneModel model);
 
     List<Drone> findAllByStateEquals(@Param("IDLE") DroneState state);
 }

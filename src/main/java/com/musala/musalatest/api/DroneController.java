@@ -27,7 +27,7 @@ public class DroneController {
     }
 
     @GetMapping("/drone-model")
-    public ApiResponse findDroneBySerialNumber(@RequestParam("model") DroneModel model){
+    public ApiResponse findDronesByModel(@RequestParam("model") DroneModel model){
         return new ApiResponse(HttpStatus.OK.value(), HttpStatus.OK.name(), droneService.findDroneByModel(model));
     }
 
@@ -36,16 +36,9 @@ public class DroneController {
         return new ApiResponse(HttpStatus.OK.value(), HttpStatus.OK.name(), droneService.findAll());
     }
 
-    @GetMapping("/available")
+    @GetMapping("/check-available")
     public ApiResponse findAvailableDrones(){
         return new ApiResponse(HttpStatus.OK.value(), HttpStatus.OK.name(), droneService.listAvailableDrones());
     }
 
-    @GetMapping("/battery")
-    public ApiResponse checkBatteryLevel(@RequestParam("serial-number") String serialNumber) throws InterruptedException {
-
-        droneService.checkDroneBatteryLevel(serialNumber);
-
-        return new ApiResponse(HttpStatus.OK.value(), HttpStatus.OK.name());
-    }
 }

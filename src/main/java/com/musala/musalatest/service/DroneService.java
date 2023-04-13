@@ -2,16 +2,17 @@ package com.musala.musalatest.service;
 
 import com.musala.musalatest.Exceptions.DroneUnavailableException;
 import com.musala.musalatest.Exceptions.DronesUnavailableException;
+import com.musala.musalatest.Exceptions.WeightOverloadException;
 import com.musala.musalatest.business.dao.DroneRepository;
 import com.musala.musalatest.business.dto.DroneRequest;
 import com.musala.musalatest.business.dto.DroneResponse;
 import com.musala.musalatest.business.enums.DroneModel;
 import com.musala.musalatest.business.enums.DroneState;
 import com.musala.musalatest.business.model.Drone;
-import com.musala.musalatest.util.ScheduledTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.stream.Collectors;
@@ -29,8 +30,10 @@ public class DroneService {
                 .serialNumber(droneRequest.serialNumber())
                 .weightLimit(droneRequest.weightLimit())
                 .state(DroneState.IDLE)
-                .batteryCapacity(droneRequest.batteryCapacity())
+                .batteryCapacity(100)
                 .build();
+
+        if (drone.getWeightLimit() > 500) throw new WeightOverloadException("drone weight cannot exceed 500!");
 
         droneRepository.save(drone);
 
@@ -48,13 +51,14 @@ public class DroneService {
 
     }
 
-    public DroneResponse findDroneByModel(DroneModel model) {
+    public List<DroneResponse> findDroneByModel(DroneModel model) {
 
-        var drone = droneRepository.findDroneByModel(model);
+        var drones = droneRepository.findDronesByModel(model);
 
-        if (drone.isEmpty()) throw new DroneUnavailableException("Drone model: " + model + " not found.");
+        if (drones.isEmpty()) throw new DroneUnavailableException("Drones unavailable");
 
-        return new DroneResponse(drone.get().getSerialNumber(), drone.get().getModel(), drone.get().getWeightLimit(), drone.get().getBatteryCapacity(), drone.get().getState());
+        return drones.stream().map(drone -> (new DroneResponse(drone.getSerialNumber(), drone.getModel(),
+                drone.getWeightLimit(), drone.getBatteryCapacity(), drone.getState()))).collect(Collectors.toList());
 
     }
 
@@ -68,45 +72,28 @@ public class DroneService {
 
     public List<DroneResponse> listAvailableDrones() {
 
-        var drones = droneRepository.findAllByStateEquals(DroneState.IDLE);
+        var availableDrones = new ArrayList<Drone>();
 
-        if (drones.isEmpty()) throw new DronesUnavailableException("No drones available at the moment");
+        var idleDrones = droneRepository.findAllByStateEquals(DroneState.IDLE);
 
-        return drones.stream().map(a -> new DroneResponse(a.getSerialNumber(), a.getModel(), a.getWeightLimit(), a.getBatteryCapacity(), a.getState())).collect(Collectors.toList());
+        var loadedDrones = droneRepository.findAllByStateEquals(DroneState.LOADED);
+
+        var returningDrones = droneRepository.findAllByStateEquals(DroneState.RETURNING);
+
+        var deliveredDrones = droneRepository.findAllByStateEquals(DroneState.DELIVERED);
+
+        availableDrones.addAll(idleDrones);
+
+        availableDrones.addAll(loadedDrones);
+
+        availableDrones.addAll(returningDrones);
+
+        availableDrones.addAll(deliveredDrones);
+
+        if (availableDrones.isEmpty()) throw new DronesUnavailableException("No drones available at the moment");
+
+        return availableDrones.stream().map(a -> new DroneResponse(a.getSerialNumber(), a.getModel(), a.getWeightLimit(), a.getBatteryCapacity(), a.getState())).collect(Collectors.toList());
     }
 
-    public void checkDroneBatteryLevel(String serialNumber) throws InterruptedException {
-        var drone = findDroneBySerialNumber(serialNumber);
 
-        var batteryLife = drone.getBatteryCapacity();
-
-        var time = new Timer();
-
-        ScheduledTask st = new ScheduledTask();
-
-        time.schedule(st, 0, 180000);
-
-//        Runnable runnable = new Runnable() {
-//            @Override
-//            public void run() {
-//
-//                batteryLife[0]--;
-//            }
-//        };
-//
-//        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-//        executor.scheduleAtFixedRate(runnable, 0, 3, TimeUnit.MINUTES);
-
-
-        //add battery checking logic here, have a decremental function as well for a given interval
-        for (batteryLife = 100; batteryLife >= 0; batteryLife--) {
-            System.out.println("Battery Health remaining: " + batteryLife);
-            Thread.sleep(2000);
-            if (batteryLife == 0) {
-                System.out.println("Battery drained");
-                System.exit(0);
-            }
-
-        }
-    }
 }

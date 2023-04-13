@@ -5,5 +5,5 @@ import com.musala.musalatest.business.model.Medication;
 
 import java.util.List;
 
-public record DispatchResponse(Drone drone, List<Medication> medications) {
+public record DispatchResponse(Drone drone, List<Medication> medications, String reference) {
 }

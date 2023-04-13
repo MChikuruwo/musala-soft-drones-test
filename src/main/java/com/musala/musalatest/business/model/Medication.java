@@ -27,10 +27,10 @@ public class Medication extends AbstractAuditingEntity {
     private int weight;
 
     @Column(unique = true, nullable = false)
-    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "invalid_code")
+    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Code must contain uppercase letters and numbers only!")
     private String code;
 
-    @Lob
-    private byte[] image;
+    @OneToOne(fetch = FetchType.EAGER,cascade = CascadeType.ALL)
+    private FileStorage fileStorage;
 
 }
